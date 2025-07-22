@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Paper,
   Typography,
   Button,
   FormControl,
@@ -126,11 +125,13 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
   };
 
   return (
-    <Paper sx={{ 
+    <Box sx={{ 
       p: 3, 
       height: '100%',
-      borderRadius: 2,
-      background: '#fafafa',
+      borderRadius: 8,
+      backgroundColor: '#ffffff',
+      border: '1px solid #e0e0e0',
+      boxShadow: 'none !important',
     }}>
       <Typography variant="h6" gutterBottom sx={{ fontWeight: 500, mb: 3 }}>
         Processing Options
@@ -150,6 +151,15 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
             '& .MuiToggleButton-root': {
               py: 1.5,
               fontSize: '0.95rem',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              border: '1px solid rgba(0,0,0,0.1)',
+              '&.Mui-selected': {
+                background: 'linear-gradient(135deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.7) 100%)',
+                color: '#ffffff',
+                border: '1px solid rgba(255,255,255,0.2)',
+              },
             },
           }}
         >
@@ -212,9 +222,9 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
         <Box sx={{ 
           p: 3, 
           border: '1px solid #e0e0e0', 
-          borderRadius: 2,
-          background: '#ffffff',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          borderRadius: 8,
+          backgroundColor: '#ffffff',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}>
           <Typography variant="subtitle1" gutterBottom sx={{ 
             fontWeight: 600, 
@@ -229,9 +239,9 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
               <Box sx={{ 
                 textAlign: 'center', 
                 p: 2,
-                border: '1px solid #f0f0f0',
-                borderRadius: 1,
-                background: '#fafafa',
+                border: '1px solid #e0e0e0',
+                borderRadius: 6,
+                backgroundColor: '#f9f9f9',
               }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
                   {results.mode === 'compress' ? 'Original' : 'Compressed'}
@@ -245,9 +255,9 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
               <Box sx={{ 
                 textAlign: 'center', 
                 p: 2,
-                border: '1px solid #f0f0f0',
-                borderRadius: 1,
-                background: '#fafafa',
+                border: '1px solid #e0e0e0',
+                borderRadius: 6,
+                backgroundColor: '#f9f9f9',
               }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
                   {results.mode === 'compress' ? 'Compressed' : 'Decompressed'}
@@ -288,7 +298,7 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
           </Button>
         </Box>
       )}
-    </Paper>
+    </Box>
   );
 };
 

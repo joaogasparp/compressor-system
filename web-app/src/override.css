@@ -1,0 +1,40 @@
+/* Override all MUI Paper styles */
+.MuiPaper-root,
+.MuiPaper-elevation,
+.MuiPaper-rounded,
+.MuiPaper-elevation1,
+[class*="MuiPaper"],
+[class*="css-"][class*="MuiPaper"] {
+  box-shadow: none !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 8px !important;
+}
+
+/* Remove all auto-generated CSS classes that start with css- and contain MuiPaper */
+[class*="css-"] {
+  box-shadow: none !important;
+}
+
+/* Specific overrides for elevation classes */
+.MuiPaper-elevation0,
+.MuiPaper-elevation1,
+.MuiPaper-elevation2,
+.MuiPaper-elevation3,
+.MuiPaper-elevation4,
+.MuiPaper-elevation5 {
+  box-shadow: none !important;
+}
+
+/* Force override all Paper components */
+div[class*="MuiPaper"] {
+  box-shadow: none !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 8px !important;
+}
+
+/* Nuclear option - override everything */
+* {
+  box-shadow: none !important;
+}

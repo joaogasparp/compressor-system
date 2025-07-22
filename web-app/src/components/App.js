@@ -5,12 +5,12 @@ import {
   CssBaseline, 
   Container, 
   Typography, 
-  Box, 
-  Paper,
+  Box,
   Grid
 } from '@mui/material';
 import FileUpload from './FileUpload';
 import CompressionDashboard from './CompressionDashboard';
+import '../override.css';
 
 // Minimal black and white theme
 const theme = createTheme({
@@ -36,6 +36,36 @@ const theme = createTheme({
     },
     divider: '#e0e0e0',
   },
+  shape: {
+    borderRadius: 8,
+  },
+  shadows: [
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+    'none',
+  ],
   typography: {
     fontFamily: '"SF Pro Display", "Helvetica Neue", Arial, sans-serif',
     h4: {
@@ -51,13 +81,70 @@ const theme = createTheme({
     },
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          '& .MuiPaper-root, & .MuiPaper-elevation, & .MuiPaper-rounded, & .MuiPaper-elevation1': {
+            boxShadow: 'none !important',
+            backgroundColor: '#ffffff !important',
+            border: '1px solid #e0e0e0 !important',
+            borderRadius: '8px !important',
+          },
+          '& [class*="MuiPaper"]': {
+            boxShadow: 'none !important',
+            backgroundColor: '#ffffff !important',
+            border: '1px solid #e0e0e0 !important',
+            borderRadius: '8px !important',
+          },
+          '& [class*="css-"]': {
+            '&[class*="MuiPaper"]': {
+              boxShadow: 'none !important',
+              backgroundColor: '#ffffff !important',
+              border: '1px solid #e0e0e0 !important',
+              borderRadius: '8px !important',
+            },
+          },
+        },
+      },
+    },
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: '#ffffff',
-          border: '1px solid #e0e0e0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          borderRadius: 8,
+          backgroundColor: '#ffffff !important',
+          border: '1px solid #e0e0e0 !important',
+          boxShadow: 'none !important',
+          borderRadius: '8px !important',
+          '&.MuiPaper-elevation': {
+            boxShadow: 'none !important',
+          },
+          '&.MuiPaper-elevation1': {
+            boxShadow: 'none !important',
+          },
+          '&.MuiPaper-rounded': {
+            borderRadius: '8px !important',
+          },
+          // Remove all auto-generated CSS classes
+          '&[class*="css-"]': {
+            boxShadow: 'none !important',
+            backgroundColor: '#ffffff !important',
+            border: '1px solid #e0e0e0 !important',
+            borderRadius: '8px !important',
+          },
+        },
+        elevation0: {
+          boxShadow: 'none !important',
+        },
+        elevation1: {
+          boxShadow: 'none !important',
+        },
+        elevation2: {
+          boxShadow: 'none !important',
+        },
+        elevation3: {
+          boxShadow: 'none !important',
+        },
+        rounded: {
+          borderRadius: '8px !important',
         },
       },
     },
@@ -67,26 +154,24 @@ const theme = createTheme({
           textTransform: 'none',
           fontWeight: 500,
           borderRadius: 6,
-          transition: 'all 0.2s ease-in-out',
+          transition: 'all 0.2s ease',
         },
         contained: {
           backgroundColor: '#000000',
           color: '#ffffff',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
           '&:hover': {
             backgroundColor: '#333333',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
-            transform: 'translateY(-1px)',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
           },
         },
         outlined: {
-          borderColor: '#000000',
-          color: '#000000',
-          borderWidth: '1.5px',
+          borderColor: '#333333',
+          color: '#333333',
+          backgroundColor: '#ffffff',
           '&:hover': {
-            borderColor: '#333333',
-            backgroundColor: 'rgba(0,0,0,0.04)',
-            borderWidth: '1.5px',
+            borderColor: '#000000',
+            backgroundColor: '#f5f5f5',
           },
         },
       },
@@ -116,9 +201,17 @@ const theme = createTheme({
           borderRadius: 6,
           textTransform: 'none',
           fontWeight: 500,
+          backgroundColor: '#ffffff',
+          border: '1px solid #d0d0d0',
+          color: '#333333',
+          '&:hover': {
+            backgroundColor: '#f5f5f5',
+            borderColor: '#333333',
+          },
           '&.Mui-selected': {
             backgroundColor: '#000000',
             color: '#ffffff',
+            borderColor: '#000000',
             '&:hover': {
               backgroundColor: '#333333',
             },
@@ -180,9 +273,16 @@ function App() {
 
           <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
-              <Paper sx={{ p: 3, height: 'fit-content' }}>
+              <Box sx={{ 
+                p: 3, 
+                height: 'fit-content',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e0e0e0',
+                borderRadius: 8,
+                boxShadow: 'none !important',
+              }}>
                 <FileUpload onFileSelect={handleFileUpload} />
-              </Paper>
+              </Box>
             </Grid>
             <Grid item xs={12} md={6}>
               <CompressionDashboard 

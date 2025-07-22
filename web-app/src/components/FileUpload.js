@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Button,
-  Paper,
   Alert,
   Chip,
 } from '@mui/material';
@@ -11,6 +10,9 @@ import {
   CloudUpload as UploadIcon,
   InsertDriveFile as FileIcon,
   CheckCircle as CheckIcon,
+  UploadFile as SimpleUploadIcon,
+  Add as AddIcon,
+  FileUpload as FileUploadIcon,
 } from '@mui/icons-material';
 
 const FileUpload = ({ onFileSelect }) => {
@@ -72,7 +74,7 @@ const FileUpload = ({ onFileSelect }) => {
         </Alert>
       )}
 
-      <Paper
+      <Box
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -80,15 +82,14 @@ const FileUpload = ({ onFileSelect }) => {
           p: 4,
           textAlign: 'center',
           cursor: 'pointer',
-          border: dragOver ? '2px dashed #000000' : '2px dashed #e0e0e0',
-          backgroundColor: dragOver ? 'rgba(0,0,0,0.02)' : '#fafafa',
-          borderRadius: 2,
-          transition: 'all 0.3s ease',
+          border: dragOver ? '2px dashed #333333' : '2px dashed #cccccc',
+          backgroundColor: dragOver ? '#f5f5f5' : '#ffffff',
+          borderRadius: 8,
+          transition: 'all 0.2s ease',
+          boxShadow: 'none !important',
           '&:hover': {
-            borderColor: '#000000',
-            backgroundColor: 'rgba(0,0,0,0.02)',
-            transform: 'translateY(-2px)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            borderColor: '#333333',
+            backgroundColor: '#f9f9f9',
           },
         }}
         component="label"
@@ -102,19 +103,55 @@ const FileUpload = ({ onFileSelect }) => {
         />
         
         {!file ? (
-          <>
-            <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 400 }}>
-              Drop file here or click to select
+          <Box sx={{ py: 6 }}>
+            <Box sx={{
+              width: 60,
+              height: 60,
+              margin: '0 auto 24px',
+              border: '2px solid #e0e0e0',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              '&::before': {
+                content: '"📁"',
+                fontSize: '24px',
+                lineHeight: 1,
+              },
+            }} />
+            
+            <Typography variant="h6" sx={{ 
+              fontWeight: 500, 
+              mb: 0.5, 
+              color: '#000000',
+              fontSize: '1.1rem',
+            }}>
+              Choose a file to upload
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Maximum file size: 20MB
+            <Typography variant="body2" sx={{ 
+              color: '#666666',
+              fontWeight: 400,
+              fontSize: '0.9rem',
+            }}>
+              Drag and drop or click to browse • Max 20MB
             </Typography>
-          </>
+          </Box>
         ) : (
           <Box>
-            <CheckIcon sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
+            <Box sx={{ 
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              mb: 2,
+            }}>
+              <CheckIcon sx={{ 
+                fontSize: 48, 
+                color: '#2e7d32',
+                display: 'block',
+              }} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 500, mb: 1.5, color: '#000000' }}>
               File Selected
             </Typography>
             
@@ -123,15 +160,25 @@ const FileUpload = ({ onFileSelect }) => {
               alignItems: 'center', 
               justifyContent: 'center',
               gap: 2,
-              mt: 2,
-              mb: 2
+              mb: 1.5,
+              p: 2,
+              backgroundColor: '#f5f5f5',
+              borderRadius: 6,
+              border: '1px solid #e0e0e0',
             }}>
-              <FileIcon sx={{ color: 'text.secondary' }} />
+              <FileIcon sx={{ 
+                color: '#666666',
+              }} />
               <Box sx={{ textAlign: 'left' }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                <Typography variant="body1" sx={{ 
+                  fontWeight: 500,
+                  color: '#000000',
+                }}>
                   {file.name}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: '#666666',
+                }}>
                   {formatFileSize(file.size)}
                 </Typography>
               </Box>
@@ -140,20 +187,33 @@ const FileUpload = ({ onFileSelect }) => {
             <Chip
               label={file.type || 'Unknown type'}
               size="small"
-              sx={{ mb: 2 }}
+              sx={{ 
+                mb: 1.5,
+                backgroundColor: '#f0f0f0',
+                border: '1px solid #d0d0d0',
+                color: '#333333',
+              }}
             />
 
             <Button
               variant="outlined"
               component="label"
               htmlFor="file-upload"
-              sx={{ mt: 2 }}
+              sx={{ 
+                borderColor: '#333333',
+                color: '#333333',
+                backgroundColor: '#ffffff',
+                '&:hover': {
+                  borderColor: '#000000',
+                  backgroundColor: '#f5f5f5',
+                },
+              }}
             >
               Select Different File
             </Button>
           </Box>
         )}
-      </Paper>
+      </Box>
     </Box>
   );
 };
