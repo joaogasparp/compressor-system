@@ -29,41 +29,46 @@ CompressionResult LZ77Algorithm::compress(const ByteVector& input, const Compres
     
     auto start_time = now();
     
-    // Find all matches
     std::vector<LZ77Match> matches;
-    matches.reserve(input.size() / 4); // Conservative estimate
+    matches.reserve(input.size() / 2);
     
-    HashSearch searcher;
-    
-    for (size_t i = 0; i < input.size(); ) {
-        // Find longest match at current position
-        LZ77Match match = searcher.find_match(input, i);
+    size_t pos = 0;
+    while (pos < input.size()) {
+        LZ77Match best_match;
+        best_match.distance = 0;
+        best_match.length = 0;
+        best_match.next_char = (pos < input.size()) ? input[pos] : 0;
         
-        if (match.is_literal()) {
-            // No match found, encode as literal
-            match.next_char = input[i];
-            matches.push_back(match);
+        // Search for matches in the sliding window
+        size_t window_start = (pos >= WINDOW_SIZE) ? pos - WINDOW_SIZE : 0;
+        
+        for (size_t search_pos = window_start; search_pos < pos; ++search_pos) {
+            size_t match_length = 0;
             
-            // Update hash table with current position
-            searcher.update(input, i);
-            i++;
+            // Count matching characters
+            while (search_pos + match_length < pos && 
+                   pos + match_length < input.size() &&
+                   input[search_pos + match_length] == input[pos + match_length] &&
+                   match_length < MAX_MATCH_LENGTH) {
+                match_length++;
+            }
+            
+            // Update best match if this is better
+            if (match_length >= MIN_MATCH_LENGTH && match_length > best_match.length) {
+                best_match.distance = pos - search_pos;
+                best_match.length = match_length;
+                best_match.next_char = (pos + match_length < input.size()) ? 
+                                      input[pos + match_length] : 0;
+            }
+        }
+        
+        matches.push_back(best_match);
+        
+        // Advance position
+        if (best_match.length > 0) {
+            pos += best_match.length + 1; // Skip matched bytes + next char
         } else {
-            // Match found, ensure next character is correct
-            size_t next_pos = i + match.length;
-            if (next_pos < input.size()) {
-                match.next_char = input[next_pos];
-            } else {
-                match.next_char = 0;
-            }
-            matches.push_back(match);
-            
-            // Update hash table for positions in the match
-            for (size_t j = i; j < next_pos && j + 2 < input.size(); ++j) {
-                searcher.update(input, j);
-            }
-            
-            // Skip to position after the match + next character
-            i = next_pos + (next_pos < input.size() ? 1 : 0);
+            pos++; // Just the literal character
         }
     }
     
@@ -103,29 +108,32 @@ CompressionResult LZ77Algorithm::decompress(const ByteVector& input, const Compr
         
         // Reconstruct original data
         ByteVector decompressed;
-        decompressed.reserve(input.size() * 3); // Conservative estimate
+        decompressed.reserve(input.size() * 3);
         
         for (const auto& match : matches) {
             if (match.is_literal()) {
+                // Just add the literal character
                 decompressed.push_back(match.next_char);
             } else {
                 // Copy from sliding window
-                size_t start_pos = decompressed.size() - match.distance;
-                
-                // Validate distance
-                if (match.distance > decompressed.size() || match.distance == 0) {
-                    throw DecompressionException("Invalid LZ77 match distance");
+                if (match.distance > decompressed.size()) {
+                    throw DecompressionException("Invalid LZ77 match distance: " + 
+                                               std::to_string(match.distance) + 
+                                               " > " + std::to_string(decompressed.size()));
                 }
                 
+                size_t start_pos = decompressed.size() - match.distance;
+                
                 // Copy match.length bytes
-                for (uint8_t i = 0; i < match.length; ++i) {
+                for (uint16_t i = 0; i < match.length; ++i) {
+                    if (start_pos + i >= decompressed.size()) {
+                        throw DecompressionException("Invalid copy position in LZ77");
+                    }
                     decompressed.push_back(decompressed[start_pos + i]);
                 }
                 
-                // Add next character if it exists
-                if (match.next_char != 0 || matches.size() == 1) {
-                    decompressed.push_back(match.next_char);
-                }
+                // Add next character
+                decompressed.push_back(match.next_char);
             }
         }
         

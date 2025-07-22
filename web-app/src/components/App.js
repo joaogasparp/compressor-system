@@ -1,67 +1,63 @@
 import React, { useState } from 'react';
 import { 
+  ThemeProvider, 
+  createTheme, 
+  CssBaseline, 
   Container, 
-  Grid, 
-  Paper, 
   Typography, 
   Box, 
-  ThemeProvider, 
-  createTheme,
-  CssBaseline 
+  Paper,
+  Grid
 } from '@mui/material';
 import FileUpload from './FileUpload';
 import CompressionDashboard from './CompressionDashboard';
 
+// Minimal black and white theme
 const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#2563eb', // Modern blue
-      light: '#60a5fa',
-      dark: '#1d4ed8',
+      main: '#000000',
+      light: '#333333',
+      dark: '#000000',
     },
     secondary: {
-      main: '#7c3aed', // Modern purple
-      light: '#a78bfa',
-      dark: '#5b21b6',
+      main: '#666666',
+      light: '#888888',
+      dark: '#444444',
     },
     background: {
-      default: '#f8fafc',
+      default: '#ffffff',
       paper: '#ffffff',
     },
-    success: {
-      main: '#10b981',
-      light: '#34d399',
-      dark: '#059669',
+    text: {
+      primary: '#000000',
+      secondary: '#666666',
     },
-    error: {
-      main: '#ef4444',
-      light: '#f87171',
-      dark: '#dc2626',
-    },
+    divider: '#e0e0e0',
   },
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"SF Pro Display", "Helvetica Neue", Arial, sans-serif',
     h4: {
-      fontWeight: 700,
-      letterSpacing: '-0.025em',
+      fontWeight: 300,
+      letterSpacing: '-0.02em',
     },
     h6: {
-      fontWeight: 600,
+      fontWeight: 500,
+      letterSpacing: '-0.01em',
     },
     body1: {
       lineHeight: 1.6,
     },
   },
-  shape: {
-    borderRadius: 12,
-  },
   components: {
     MuiPaper: {
       styleOverrides: {
         root: {
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          backgroundColor: '#ffffff',
+          border: '1px solid #e0e0e0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          borderRadius: 8,
         },
       },
     },
@@ -69,11 +65,71 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           textTransform: 'none',
-          fontWeight: 600,
-          boxShadow: 'none',
+          fontWeight: 500,
+          borderRadius: 6,
+          transition: 'all 0.2s ease-in-out',
+        },
+        contained: {
+          backgroundColor: '#000000',
+          color: '#ffffff',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           '&:hover': {
-            boxShadow: 'none',
+            backgroundColor: '#333333',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+            transform: 'translateY(-1px)',
           },
+        },
+        outlined: {
+          borderColor: '#000000',
+          color: '#000000',
+          borderWidth: '1.5px',
+          '&:hover': {
+            borderColor: '#333333',
+            backgroundColor: 'rgba(0,0,0,0.04)',
+            borderWidth: '1.5px',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 6,
+            '& fieldset': {
+              borderColor: '#e0e0e0',
+            },
+            '&:hover fieldset': {
+              borderColor: '#000000',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#000000',
+              borderWidth: '2px',
+            },
+          },
+        },
+      },
+    },
+    MuiToggleButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
+          textTransform: 'none',
+          fontWeight: 500,
+          '&.Mui-selected': {
+            backgroundColor: '#000000',
+            color: '#ffffff',
+            '&:hover': {
+              backgroundColor: '#333333',
+            },
+          },
+        },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
         },
       },
     },
@@ -81,11 +137,11 @@ const theme = createTheme({
 });
 
 function App() {
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
   const [compressionResults, setCompressionResults] = useState(null);
 
-  const handleFileSelect = (file) => {
-    setSelectedFile(file);
+  const handleFileUpload = (file) => {
+    setUploadedFile(file);
     setCompressionResults(null);
   };
 
@@ -97,133 +153,45 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        py: 4
+        minHeight: '100vh', 
+        backgroundColor: '#ffffff',
+        py: 4,
       }}>
         <Container maxWidth="lg">
-          {/* Header */}
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 4, 
-              mb: 4, 
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: 3,
-              textAlign: 'center'
-            }}
-          >
+          <Box sx={{ mb: 6, textAlign: 'center' }}>
             <Typography 
               variant="h4" 
               component="h1" 
-              gutterBottom 
               sx={{ 
-                background: 'linear-gradient(45deg, #2563eb, #7c3aed)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 2
+                mb: 2,
+                color: '#000000',
               }}
             >
-              Advanced File Compression
+              File Compression System
             </Typography>
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-              Compress files using state-of-the-art algorithms
+            <Typography 
+              variant="body1" 
+              color="text.secondary"
+              sx={{ maxWidth: 600, mx: 'auto' }}
+            >
+              High-performance compression algorithms: LZ77, Huffman, and RLE
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Choose from LZ77, Huffman, or RLE compression methods
-            </Typography>
-          </Paper>
+          </Box>
 
-          {/* Main Content */}
-          <Grid container spacing={3}>
+          <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
-              <FileUpload 
-                onFileSelect={handleFileSelect} 
-                selectedFile={selectedFile}
-              />
+              <Paper sx={{ p: 3, height: 'fit-content' }}>
+                <FileUpload onFileSelect={handleFileUpload} />
+              </Paper>
             </Grid>
             <Grid item xs={12} md={6}>
               <CompressionDashboard 
-                file={selectedFile}
+                file={uploadedFile}
                 onCompressionComplete={handleCompressionComplete}
                 results={compressionResults}
               />
             </Grid>
           </Grid>
-
-          {/* Results Summary */}
-          {compressionResults && (
-            <Box sx={{ mt: 3 }}>
-              <Paper 
-                sx={{ 
-                  p: 4,
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: 3
-                }}
-              >
-                <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-                  Compression Results
-                </Typography>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>
-                        {compressionResults.algorithm}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Algorithm Used
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
-                        {(compressionResults.originalSize / 1024).toFixed(1)} KB
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Original Size
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h4" color="secondary.main" sx={{ fontWeight: 700 }}>
-                        {(compressionResults.compressedSize / 1024).toFixed(1)} KB
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Compressed Size
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="h4" color="error.main" sx={{ fontWeight: 700 }}>
-                        {compressionResults.ratio}%
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Final Ratio
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-                
-                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Processing time: <strong>{compressionResults.time} ms</strong>
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    •
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Integrity: <strong>{compressionResults.verified ? 'Verified' : 'Error'}</strong>
-                  </Typography>
-                </Box>
-              </Paper>
-            </Box>
-          )}
         </Container>
       </Box>
     </ThemeProvider>

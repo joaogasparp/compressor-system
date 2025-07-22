@@ -158,7 +158,7 @@ private:
             }
             
             // Safety check - don't read too much
-            if (totalBytesRead > 2 * 1024 * 1024) break; // 2MB limit
+            if (totalBytesRead > 20 * 1024 * 1024) break; // 20MB limit
         }
         std::string response;
         
@@ -180,6 +180,8 @@ private:
             }
         } else if (method == "POST" && path == "/compress") {
             response = handleCompression(request);
+        } else if (method == "POST" && path == "/decompress") {
+            response = handleDecompression(request);
         } else if (method == "OPTIONS") {
             // Handle CORS preflight request
             response = createCORSResponse("200 OK", "text/plain", "OK");
@@ -319,6 +321,84 @@ private:
             std::cout << "Compression completed: " << fileData.size() << " -> " << result.data().size() 
                      << " bytes (" << std::fixed << std::setprecision(1) 
                      << ((double)result.data().size() / fileData.size() * 100) << "%)" << std::endl;
+            
+            return createCORSResponse("200 OK", "application/json", jsonResponse);
+            
+        } catch (const std::exception& e) {
+            return createCORSResponse("500 Internal Server Error", "application/json", 
+                "{\"error\":\"Internal error: " + std::string(e.what()) + "\"}");
+        }
+    }
+    
+    std::string handleDecompression(const std::string& request) {
+        try {
+            std::cout << "Processing decompression request..." << std::endl;
+            
+            // Parse multipart form data (simplified)
+            size_t boundaryPos = request.find("boundary=");
+            if (boundaryPos == std::string::npos) {
+                std::cout << "Boundary not found in request" << std::endl;
+                return createCORSResponse("400 Bad Request", "application/json", 
+                    "{\"error\":\"Boundary not found\"}");
+            }
+            
+            std::string boundary = request.substr(boundaryPos + 9);
+            // Remove quotes if present and find end of boundary
+            if (boundary[0] == '"') {
+                boundary = boundary.substr(1);
+                size_t quotePos = boundary.find('"');
+                if (quotePos != std::string::npos) {
+                    boundary = boundary.substr(0, quotePos);
+                }
+            } else {
+                size_t endPos = boundary.find_first_of("\r\n ");
+                if (endPos != std::string::npos) {
+                    boundary = boundary.substr(0, endPos);
+                }
+            }
+            
+            // Extract file data and algorithm
+            std::string algorithm = extractFormField(request, "algorithm");
+            std::vector<uint8_t> fileData = extractFileData(request, boundary);
+            
+            if (algorithm.empty() || fileData.empty()) {
+                return createCORSResponse("400 Bad Request", "application/json", 
+                    "{\"error\":\"Missing algorithm or file data\"}");
+            }
+            
+            std::cout << "Decompressing " << fileData.size() << " bytes using " << algorithm << std::endl;
+            
+            // Convert to ByteVector
+            compressor::ByteVector compressedData(fileData.begin(), fileData.end());
+            
+            // Decompress using selected algorithm
+            auto decompressor = compressor::AlgorithmFactory::create(algorithm);
+            if (!decompressor) {
+                return createCORSResponse("400 Bad Request", "application/json", 
+                    "{\"error\":\"Invalid algorithm: " + algorithm + "\"}");
+            }
+            
+            auto result = decompressor->decompress(compressedData);
+            
+            if (!result.is_success()) {
+                return createCORSResponse("400 Bad Request", "application/json", 
+                    "{\"error\":\"Decompression error: " + result.message() + "\"}");
+            }
+            
+            // Encode decompressed data in base64
+            std::string encodedData = base64Encode(result.data());
+            
+            std::string jsonResponse = "{\"success\": true,";
+            jsonResponse += "\"algorithm\": \"" + algorithm + "\",";
+            jsonResponse += "\"decompressed_data\": \"" + encodedData + "\",";
+            jsonResponse += "\"compressed_size\": " + std::to_string(compressedData.size()) + ",";
+            jsonResponse += "\"decompressed_size\": " + std::to_string(result.data().size()) + ",";
+            jsonResponse += "\"compression_ratio\": " + std::to_string((double)compressedData.size() / result.data().size()) + ",";
+            jsonResponse += "\"decompression_time_ms\": " + std::to_string(result.stats().decompression_time_ms);
+            jsonResponse += "}";
+            
+            std::cout << "Decompression completed: " << compressedData.size() << " -> " << result.data().size() 
+                     << " bytes" << std::endl;
             
             return createCORSResponse("200 OK", "application/json", jsonResponse);
             

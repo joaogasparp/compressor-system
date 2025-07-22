@@ -34,6 +34,7 @@ private:
     static constexpr size_t WINDOW_SIZE = 4096;      // Look-back window size
     static constexpr size_t LOOKAHEAD_SIZE = 18;     // Look-ahead buffer size
     static constexpr size_t MIN_MATCH_LENGTH = 3;    // Minimum match length
+    static constexpr size_t MAX_MATCH_LENGTH = 258;  // Maximum match length
     
     // Find the longest match in the sliding window
     LZ77Match find_longest_match(const ByteVector& input, size_t position);
