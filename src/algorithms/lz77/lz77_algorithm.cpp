@@ -36,33 +36,34 @@ CompressionResult LZ77Algorithm::compress(const ByteVector& input, const Compres
     HashSearch searcher;
     
     for (size_t i = 0; i < input.size(); ) {
-        // Update hash table with current position
-        if (i >= 2) {
-            searcher.update(input, i - 2);
-        }
-        
-        // Find longest match
+        // Find longest match at current position
         LZ77Match match = searcher.find_match(input, i);
         
         if (match.is_literal()) {
+            // No match found, encode as literal
             match.next_char = input[i];
             matches.push_back(match);
+            
+            // Update hash table with current position
+            searcher.update(input, i);
             i++;
         } else {
-            // Ensure we don't go beyond input bounds
-            if (i + match.length < input.size()) {
-                match.next_char = input[i + match.length];
+            // Match found, ensure next character is correct
+            size_t next_pos = i + match.length;
+            if (next_pos < input.size()) {
+                match.next_char = input[next_pos];
             } else {
                 match.next_char = 0;
             }
             matches.push_back(match);
             
-            // Update hash table for all positions in the match
-            for (uint8_t j = 0; j < match.length && i + j + 2 < input.size(); ++j) {
-                searcher.update(input, i + j);
+            // Update hash table for positions in the match
+            for (size_t j = i; j < next_pos && j + 2 < input.size(); ++j) {
+                searcher.update(input, j);
             }
             
-            i += match.length + 1;
+            // Skip to position after the match + next character
+            i = next_pos + (next_pos < input.size() ? 1 : 0);
         }
     }
     
@@ -111,14 +112,18 @@ CompressionResult LZ77Algorithm::decompress(const ByteVector& input, const Compr
                 // Copy from sliding window
                 size_t start_pos = decompressed.size() - match.distance;
                 
+                // Validate distance
+                if (match.distance > decompressed.size() || match.distance == 0) {
+                    throw DecompressionException("Invalid LZ77 match distance");
+                }
+                
+                // Copy match.length bytes
                 for (uint8_t i = 0; i < match.length; ++i) {
-                    if (start_pos + i >= decompressed.size()) {
-                        throw DecompressionException("Invalid LZ77 match distance");
-                    }
                     decompressed.push_back(decompressed[start_pos + i]);
                 }
                 
-                if (match.next_char != 0 || !matches.empty()) {
+                // Add next character if it exists
+                if (match.next_char != 0 || matches.size() == 1) {
                     decompressed.push_back(match.next_char);
                 }
             }

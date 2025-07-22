@@ -13,12 +13,21 @@ import {
   Divider,
   Chip,
   Grid,
+  Card,
+  CardContent,
+  LinearProgress,
+  Fade,
+  Zoom,
 } from '@mui/material';
 import {
   PlayArrow as PlayIcon,
   Download as DownloadIcon,
   Speed as SpeedIcon,
   Compress as CompressIcon,
+  Assessment as AssessmentIcon,
+  Timer as TimerIcon,
+  CheckCircle as CheckIcon,
+  Error as ErrorIcon,
 } from '@mui/icons-material';
 
 const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
@@ -105,38 +114,89 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
   };
 
   return (
-    <Paper sx={{ p: 3, height: '100%' }}>
-      <Typography variant="h6" gutterBottom>
-        Compression Dashboard
-      </Typography>
-
-      <Box sx={{ mb: 3 }}>
-        <FormControl fullWidth>
-          <InputLabel>Compression Algorithm</InputLabel>
-          <Select
-            value={algorithm}
-            label="Compression Algorithm"
-            onChange={(e) => setAlgorithm(e.target.value)}
-            disabled={loading}
-          >
-            {algorithms.map((algo) => (
-              <MenuItem key={algo.value} value={algo.value}>
-                <Box>
-                  <Typography variant="body1">{algo.label}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {algo.description}
-                  </Typography>
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+    <Paper 
+      sx={{ 
+        p: 4, 
+        height: '100%',
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,247,250,0.9) 100%)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: 3,
+        border: '1px solid rgba(255,255,255,0.3)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <AssessmentIcon sx={{ mr: 2, color: 'primary.main', fontSize: 28 }} />
+        <Typography 
+          variant="h5" 
+          sx={{ 
+            fontWeight: 600,
+            background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          Compression Dashboard
+        </Typography>
       </Box>
 
+      <Card sx={{ 
+        mb: 3, 
+        background: 'rgba(255,255,255,0.7)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: 2,
+        border: '1px solid rgba(255,255,255,0.5)',
+      }}>
+        <CardContent>
+          <FormControl fullWidth>
+            <InputLabel sx={{ fontWeight: 500 }}>Compression Algorithm</InputLabel>
+            <Select
+              value={algorithm}
+              label="Compression Algorithm"
+              onChange={(e) => setAlgorithm(e.target.value)}
+              disabled={loading}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'primary.main',
+                  },
+                },
+              }}
+            >
+              {algorithms.map((algo) => (
+                <MenuItem key={algo.value} value={algo.value}>
+                  <Box>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {algo.label}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {algo.description}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </CardContent>
+      </Card>
+
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <Fade in={!!error}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 2,
+              borderRadius: 2,
+              '& .MuiAlert-icon': {
+                fontSize: 24,
+              },
+            }}
+          >
+            {error}
+          </Alert>
+        </Fade>
       )}
 
       <Box sx={{ mb: 3 }}>
@@ -145,73 +205,175 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
           fullWidth
           onClick={handleCompress}
           disabled={!file || loading}
-          startIcon={loading ? <CircularProgress size={20} /> : <PlayIcon />}
+          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PlayIcon />}
           size="large"
+          sx={{
+            py: 2,
+            borderRadius: 2,
+            fontSize: '1.1rem',
+            fontWeight: 600,
+            textTransform: 'none',
+            background: loading 
+              ? 'linear-gradient(45deg, #90caf9, #64b5f6)' 
+              : 'linear-gradient(45deg, #1976d2, #42a5f5)',
+            '&:hover': {
+              background: 'linear-gradient(45deg, #1565c0, #1976d2)',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 25px rgba(25,118,210,0.3)',
+            },
+            '&:disabled': {
+              background: 'linear-gradient(45deg, #e0e0e0, #bdbdbd)',
+            },
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
         >
           {loading ? 'Compressing...' : 'Compress File'}
         </Button>
+        {loading && (
+          <LinearProgress 
+            sx={{ 
+              mt: 1, 
+              borderRadius: 1,
+              height: 6,
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 1,
+              },
+            }} 
+          />
+        )}
       </Box>
 
       {results && (
-        <Box>
-          <Divider sx={{ mb: 2 }} />
-          <Typography variant="subtitle1" gutterBottom>
-            Compression Analysis
-          </Typography>
-
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={6}>
-              <Box sx={{ textAlign: 'center', p: 1 }}>
-                <CompressIcon color="primary" />
-                <Typography variant="body2" color="text.secondary">
-                  Original
-                </Typography>
-                <Typography variant="h6">
-                  {formatFileSize(results.originalSize)}
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6}>
-              <Box sx={{ textAlign: 'center', p: 1 }}>
-                <SpeedIcon color="secondary" />
-                <Typography variant="body2" color="text.secondary">
-                  Compressed
-                </Typography>
-                <Typography variant="h6">
-                  {formatFileSize(results.compressedSize)}
+        <Zoom in={!!results}>
+          <Card sx={{
+            background: 'linear-gradient(135deg, rgba(76,175,80,0.1) 0%, rgba(139,195,74,0.05) 100%)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: 3,
+            border: '1px solid rgba(76,175,80,0.3)',
+            overflow: 'hidden',
+          }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                <CheckIcon sx={{ mr: 2, color: 'success.main', fontSize: 28 }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: 'success.dark',
+                  }}
+                >
+                  Compression Analysis
                 </Typography>
               </Box>
-            </Grid>
-          </Grid>
 
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-            <Chip
-              label={`Savings: ${(100 - parseFloat(results.ratio)).toFixed(1)}%`}
-              color="success"
-              variant="filled"
-            />
-            <Chip
-              label={`Time: ${results.time}ms`}
-              color="info"
-              variant="outlined"
-            />
-            <Chip
-              label={results.verified ? 'Verified' : 'Error'}
-              color={results.verified ? 'success' : 'error'}
-              variant="outlined"
-            />
-          </Box>
+              <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={6}>
+                  <Card sx={{ 
+                    textAlign: 'center', 
+                    p: 2,
+                    background: 'rgba(255,255,255,0.8)',
+                    borderRadius: 2,
+                    border: '1px solid rgba(255,255,255,0.5)',
+                  }}>
+                    <CompressIcon sx={{ color: 'primary.main', fontSize: 32, mb: 1 }} />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                      Original Size
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      {formatFileSize(results.originalSize)}
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={6}>
+                  <Card sx={{ 
+                    textAlign: 'center', 
+                    p: 2,
+                    background: 'rgba(255,255,255,0.8)',
+                    borderRadius: 2,
+                    border: '1px solid rgba(255,255,255,0.5)',
+                  }}>
+                    <SpeedIcon sx={{ color: 'secondary.main', fontSize: 32, mb: 1 }} />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                      Compressed Size
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+                      {formatFileSize(results.compressedSize)}
+                    </Typography>
+                  </Card>
+                </Grid>
+              </Grid>
 
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={handleDownload}
-            startIcon={<DownloadIcon />}
-            disabled={!results.compressedFile}
-          >
-            Download Compressed File
-          </Button>
-        </Box>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3, justifyContent: 'center' }}>
+                <Chip
+                  icon={<CompressIcon />}
+                  label={`Savings: ${(100 - parseFloat(results.ratio)).toFixed(1)}%`}
+                  color="success"
+                  variant="filled"
+                  sx={{ 
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                  }}
+                />
+                <Chip
+                  icon={<TimerIcon />}
+                  label={`Time: ${results.time}ms`}
+                  color="info"
+                  variant="outlined"
+                  sx={{ 
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    borderWidth: 2,
+                  }}
+                />
+                <Chip
+                  icon={results.verified ? <CheckIcon /> : <ErrorIcon />}
+                  label={results.verified ? 'Verified ✓' : 'Error ✗'}
+                  color={results.verified ? 'success' : 'error'}
+                  variant="outlined"
+                  sx={{ 
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    borderWidth: 2,
+                  }}
+                />
+              </Box>
+
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={handleDownload}
+                startIcon={<DownloadIcon />}
+                disabled={!results.compressedFile}
+                size="large"
+                sx={{
+                  py: 2,
+                  borderRadius: 2,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderWidth: 2,
+                  '&:hover': {
+                    borderWidth: 2,
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 25px rgba(76,175,80,0.3)',
+                  },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                Download Compressed File
+              </Button>
+            </CardContent>
+          </Card>
+        </Zoom>
       )}
     </Paper>
   );
