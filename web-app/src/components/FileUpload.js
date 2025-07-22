@@ -79,18 +79,16 @@ const FileUpload = ({ onFileSelect }) => {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         sx={{
-          p: 4,
+          p: 3,
           textAlign: 'center',
           cursor: 'pointer',
-          border: dragOver ? '2px dashed #333333' : '2px dashed #cccccc',
-          backgroundColor: dragOver ? '#f5f5f5' : '#ffffff',
           borderRadius: 8,
           transition: 'all 0.2s ease',
           boxShadow: 'none !important',
-          '&:hover': {
-            borderColor: '#333333',
-            backgroundColor: '#f9f9f9',
-          },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 220,
         }}
         component="label"
         htmlFor="file-upload"
@@ -103,38 +101,56 @@ const FileUpload = ({ onFileSelect }) => {
         />
         
         {!file ? (
-          <Box sx={{ py: 6 }}>
+          <Box sx={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 525,
+            height: 180,
+            margin: '0 auto',
+            borderRadius: '21px',
+            border: '2px dashed #cccccc',
+            backgroundColor: '#fafafa',
+            transition: 'all 0.2s ease',
+            ...(dragOver && {
+              borderColor: '#333333',
+              backgroundColor: '#f5f5f5',
+            }),
+          }}>
             <Box sx={{
-              width: 60,
-              height: 60,
-              margin: '0 auto 24px',
-              border: '2px solid #e0e0e0',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              '&::before': {
-                content: '"📁"',
-                fontSize: '24px',
-                lineHeight: 1,
-              },
-            }} />
+              fontSize: '32px',
+              mb: 1.5,
+              lineHeight: 1,
+            }}>
+              📁
+            </Box>
             
             <Typography variant="h6" sx={{ 
               fontWeight: 500, 
-              mb: 0.5, 
+              mb: 1, 
               color: '#000000',
-              fontSize: '1.1rem',
+              fontSize: '1rem',
+              textAlign: 'center',
+              px: 2,
             }}>
               Choose a file to upload
             </Typography>
             <Typography variant="body2" sx={{ 
               color: '#666666',
               fontWeight: 400,
-              fontSize: '0.9rem',
+              fontSize: '0.8rem',
+              textAlign: 'center',
+              px: 2,
             }}>
-              Drag and drop or click to browse • Max 20MB
+              Drag and drop or click to browse
+            </Typography>
+            <Typography variant="caption" sx={{ 
+              color: '#999999',
+              fontSize: '0.7rem',
+              mt: 0.5,
+            }}>
+              Max 20MB
             </Typography>
           </Box>
         ) : (
