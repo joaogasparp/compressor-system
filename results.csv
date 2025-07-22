@@ -1,5 +1,0 @@
-Algorithm,Status,Original_Size,Compressed_Size,Compression_Ratio,Compression_Time_ms,Decompression_Time_ms,Threads,Checksum,Error
-hybrid,FAILED,,,,,,,,Decompression failed: Decompression failed: Failed to decompress block: Decompression failed: Unknown Huffman format
-lz77,FAILED,,,,,,,,Roundtrip verification failed
-huffman,SUCCESS,22650,12568,0.554879,0.913,1.187,1,0xf9a8f9,
-rle,SUCCESS,22650,22650,1.000000,0.387,0.044,1,0xf9a8f9,

@@ -1,9 +1,0 @@
-/home/joaogasparp/Secretária/compressor-system/build/CMakeFiles/compressor.dir
-/home/joaogasparp/Secretária/compressor-system/build/CMakeFiles/web_server.dir
-/home/joaogasparp/Secretária/compressor-system/build/CMakeFiles/test.dir
-/home/joaogasparp/Secretária/compressor-system/build/CMakeFiles/edit_cache.dir
-/home/joaogasparp/Secretária/compressor-system/build/CMakeFiles/rebuild_cache.dir
-/home/joaogasparp/Secretária/compressor-system/build/CMakeFiles/list_install_components.dir
-/home/joaogasparp/Secretária/compressor-system/build/CMakeFiles/install.dir
-/home/joaogasparp/Secretária/compressor-system/build/CMakeFiles/install/local.dir
-/home/joaogasparp/Secretária/compressor-system/build/CMakeFiles/install/strip.dir

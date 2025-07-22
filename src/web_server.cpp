@@ -17,6 +17,24 @@
 #include "core/algorithm.hpp"
 #include "utils/crc.hpp"
 
+// Base64 encoding function
+std::string base64Encode(const std::vector<uint8_t>& data) {
+    const std::string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string result;
+    int val = 0, valb = -6;
+    for (auto c : data) {
+        val = (val << 8) + c;
+        valb += 8;
+        while (valb >= 0) {
+            result.push_back(chars[(val >> valb) & 0x3F]);
+            valb -= 6;
+        }
+    }
+    if (valb > -6) result.push_back(chars[((val << 8) >> (valb + 8)) & 0x3F]);
+    while (result.size() % 4) result.push_back('=');
+    return result;
+}
+
 class WebServer {
 private:
     int server_fd;
@@ -32,13 +50,13 @@ public:
     bool start(int port = 8080) {
         server_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (server_fd == 0) {
-            std::cerr << "Erro ao criar socket" << std::endl;
+            std::cerr << "Error creating socket" << std::endl;
             return false;
         }
         
         int opt = 1;
         if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-            std::cerr << "Erro ao configurar socket" << std::endl;
+            std::cerr << "Error configuring socket" << std::endl;
             return false;
         }
         
@@ -48,20 +66,25 @@ public:
         address.sin_port = htons(port);
         
         if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-            std::cerr << "Erro ao fazer bind na porta " << port << std::endl;
+            std::cerr << "Error binding to port " << port << std::endl;
             return false;
         }
         
         if (listen(server_fd, 3) < 0) {
-            std::cerr << "Erro ao escutar" << std::endl;
+            std::cerr << "Error listening" << std::endl;
             return false;
         }
         
         running = true;
-        std::cout << "🚀 Servidor iniciado na porta " << port << std::endl;
-        std::cout << "📱 Acesse: http://localhost:" << port << std::endl;
+        std::cout << "Server started on port " << port << std::endl;
+        std::cout << "Access: http://localhost:" << port << std::endl;
         
         return true;
+    }
+    
+    std::string handleAlgorithmsList() {
+        std::string jsonResponse = R"({"algorithms": ["lz77", "huffman", "rle"]})";
+        return createCORSResponse("200 OK", "application/json", jsonResponse);
     }
     
     void run() {
@@ -72,7 +95,7 @@ public:
             
             if (new_socket < 0) {
                 if (running) {
-                    std::cerr << "Erro ao aceitar conexão" << std::endl;
+                    std::cerr << "Error accepting connection" << std::endl;
                 }
                 continue;
             }
@@ -91,10 +114,52 @@ public:
     
 private:
     void handleRequest(int socket) {
-        char buffer[8192] = {0};
-        read(socket, buffer, 8192);
+        std::string request;
+        char buffer[8192];
+        ssize_t totalBytesRead = 0;
+        int contentLength = 0;
         
-        std::string request(buffer);
+        // First, read headers to get Content-Length
+        while (true) {
+            ssize_t bytesRead = read(socket, buffer, sizeof(buffer) - 1);
+            if (bytesRead <= 0) break;
+            
+            buffer[bytesRead] = '\0';
+            request.append(buffer, bytesRead);
+            totalBytesRead += bytesRead;
+            
+            // Check if we have complete headers
+            size_t headerEnd = request.find("\r\n\r\n");
+            if (headerEnd != std::string::npos) {
+                // Extract Content-Length
+                size_t clPos = request.find("Content-Length: ");
+                if (clPos != std::string::npos) {
+                    clPos += 16; // Length of "Content-Length: "
+                    size_t clEnd = request.find("\r\n", clPos);
+                    if (clEnd != std::string::npos) {
+                        contentLength = std::stoi(request.substr(clPos, clEnd - clPos));
+                    }
+                }
+                
+                // Calculate how much body we have
+                int headerSize = headerEnd + 4;
+                int bodyReceived = totalBytesRead - headerSize;
+                
+                // Read remaining body if needed
+                while (bodyReceived < contentLength) {
+                    bytesRead = read(socket, buffer, std::min(sizeof(buffer) - 1, (size_t)(contentLength - bodyReceived)));
+                    if (bytesRead <= 0) break;
+                    
+                    buffer[bytesRead] = '\0';
+                    request.append(buffer, bytesRead);
+                    bodyReceived += bytesRead;
+                }
+                break;
+            }
+            
+            // Safety check - don't read too much
+            if (totalBytesRead > 2 * 1024 * 1024) break; // 2MB limit
+        }
         std::string response;
         
         // Parse HTTP request
@@ -102,19 +167,22 @@ private:
         std::string method, path, version;
         iss >> method >> path >> version;
         
-        std::cout << "📨 " << method << " " << path << std::endl;
+        std::cout << method << " " << path << std::endl;
         
         if (method == "GET") {
-            if (path == "/" || path.find(".html") != std::string::npos ||
+            if (path == "/algorithms") {
+                response = handleAlgorithmsList();
+            } else if (path == "/" || path.find(".html") != std::string::npos ||
                 path.find(".js") != std::string::npos || path.find(".css") != std::string::npos) {
                 response = serveStaticFile(path);
             } else {
                 response = createCORSResponse("404 Not Found", "text/plain", "Not Found");
             }
-        } else if (method == "POST" && path == "/api/compress") {
+        } else if (method == "POST" && path == "/compress") {
             response = handleCompression(request);
         } else if (method == "OPTIONS") {
-            response = createCORSResponse("200 OK", "text/plain", "");
+            // Handle CORS preflight request
+            response = createCORSResponse("200 OK", "text/plain", "OK");
         } else {
             response = createCORSResponse("405 Method Not Allowed", "text/plain", "Method Not Allowed");
         }
@@ -132,7 +200,7 @@ private:
         
         if (!file.good()) {
             return createCORSResponse("404 Not Found", "text/html", 
-                "<html><body><h1>404 - Arquivo não encontrado</h1><p>Build da aplicação React não encontrado. Execute: cd web-app && npm run build</p></body></html>");
+                "<html><body><h1>404 - File not found</h1><p>React build not found. Run: cd web-app && npm run build</p></body></html>");
         }
         
         std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -147,30 +215,75 @@ private:
     
     std::string handleCompression(const std::string& request) {
         try {
+            std::cout << "Processing compression request..." << std::endl;
+            
+            // Debug: Print request headers
+            size_t headerEnd = request.find("\r\n\r\n");
+            if (headerEnd != std::string::npos) {
+                std::string headers = request.substr(0, headerEnd);
+                std::cout << "Request headers:\n" << headers << std::endl;
+            }
+            
             // Parse multipart form data (simplified)
             size_t boundaryPos = request.find("boundary=");
             if (boundaryPos == std::string::npos) {
+                std::cout << "Boundary not found in request" << std::endl;
                 return createCORSResponse("400 Bad Request", "application/json", 
-                    "{\"error\":\"Boundary não encontrado\"}");
+                    "{\"error\":\"Boundary not found\"}");
             }
             
             std::string boundary = request.substr(boundaryPos + 9);
-            boundary = boundary.substr(0, boundary.find("\\r\\n"));
+            // Remove quotes if present and find end of boundary
+            if (boundary[0] == '"') {
+                boundary = boundary.substr(1);
+                size_t quotePos = boundary.find('"');
+                if (quotePos != std::string::npos) {
+                    boundary = boundary.substr(0, quotePos);
+                }
+            } else {
+                size_t endPos = boundary.find_first_of("\r\n ");
+                if (endPos != std::string::npos) {
+                    boundary = boundary.substr(0, endPos);
+                }
+            }
+            
+            std::cout << "Using boundary: [" << boundary << "]" << std::endl;
+            
+            // Debug: Show all Content-Disposition headers
+            std::cout << "All Content-Disposition headers found:" << std::endl;
+            size_t searchPos = 0;
+            while ((searchPos = request.find("Content-Disposition: form-data", searchPos)) != std::string::npos) {
+                size_t lineEnd = request.find("\r\n", searchPos);
+                if (lineEnd != std::string::npos) {
+                    std::string line = request.substr(searchPos, lineEnd - searchPos);
+                    std::cout << "  - " << line << std::endl;
+                }
+                searchPos = lineEnd + 1;
+            }
             
             // Extract file data and algorithm
             std::string algorithm = extractFormField(request, "algorithm");
             std::vector<uint8_t> fileData = extractFileData(request, boundary);
             
+            std::cout << "Algorithm extracted: [" << algorithm << "]" << std::endl;
+            std::cout << "File data size: " << fileData.size() << " bytes" << std::endl;
+            
+            if (algorithm.empty()) {
+                std::cout << "Algorithm field is empty" << std::endl;
+                return createCORSResponse("400 Bad Request", "application/json", 
+                    "{\"error\":\"Algorithm field not found or empty\"}");
+            }
+            
             if (fileData.empty()) {
                 return createCORSResponse("400 Bad Request", "application/json", 
-                    "{\"error\":\"Arquivo não encontrado\"}");
+                    "{\"error\":\"File not found\"}");
             }
             
             // Compress using selected algorithm
             auto compressor = compressor::AlgorithmFactory::create(algorithm);
             if (!compressor) {
                 return createCORSResponse("400 Bad Request", "application/json", 
-                    "{\"error\":\"Algoritmo inválido\"}");
+                    "{\"error\":\"Invalid algorithm\"}");
             }
             
             auto start = std::chrono::high_resolution_clock::now();
@@ -181,87 +294,132 @@ private:
             
             if (!result.is_success()) {
                 return createCORSResponse("500 Internal Server Error", "application/json", 
-                    "{\"error\":\"Erro na compressão: " + result.message() + "\"}");
+                    "{\"error\":\"Compression error: " + result.message() + "\"}");
             }
             
             // Verify compression by decompressing
             auto decompressResult = compressor->decompress(result.data());
             bool verified = decompressResult.is_success() && decompressResult.data() == fileData;
             
-            // Create response with compressed data
-            std::string response = "HTTP/1.1 200 OK\\r\\n";
-            response += "Access-Control-Allow-Origin: *\\r\\n";
-            response += "Access-Control-Allow-Methods: GET, POST, OPTIONS\\r\\n";
-            response += "Access-Control-Allow-Headers: Content-Type\\r\\n";
-            response += "Content-Type: application/octet-stream\\r\\n";
-            response += "Content-Disposition: attachment; filename=\\\"compressed.dat\\\"\\r\\n";
-            response += "X-Original-Size: " + std::to_string(fileData.size()) + "\\r\\n";
-            response += "X-Compressed-Size: " + std::to_string(result.data().size()) + "\\r\\n";
-            response += "X-Compression-Ratio: " + std::to_string((double)result.data().size() / fileData.size() * 100) + "\\r\\n";
-            response += "X-Compression-Time: " + std::to_string(duration.count()) + "\\r\\n";
-            response += "X-Verified: " + std::string(verified ? "true" : "false") + "\\r\\n";
-            response += "X-Algorithm: " + algorithm + "\\r\\n";
-            response += "Content-Length: " + std::to_string(result.data().size()) + "\\r\\n\\r\\n";
+            // Encode compressed data in base64
+            std::string base64Data = base64Encode(result.data());
             
-            response.append(reinterpret_cast<const char*>(result.data().data()), result.data().size());
+            // Create JSON response
+            std::string jsonResponse = "{";
+            jsonResponse += "\"success\": true,";
+            jsonResponse += "\"original_size\": " + std::to_string(fileData.size()) + ",";
+            jsonResponse += "\"compressed_size\": " + std::to_string(result.data().size()) + ",";
+            jsonResponse += "\"compression_ratio\": " + std::to_string((double)result.data().size() / fileData.size()) + ",";
+            jsonResponse += "\"compression_time_ms\": " + std::to_string(duration.count()) + ",";
+            jsonResponse += "\"algorithm\": \"" + algorithm + "\",";
+            jsonResponse += "\"verified\": " + std::string(verified ? "true" : "false") + ",";
+            jsonResponse += "\"compressed_data\": \"" + base64Data + "\"";
+            jsonResponse += "}";
             
-            std::cout << "✅ Compressão concluída: " << fileData.size() << " → " << result.data().size() 
+            std::cout << "Compression completed: " << fileData.size() << " -> " << result.data().size() 
                      << " bytes (" << std::fixed << std::setprecision(1) 
                      << ((double)result.data().size() / fileData.size() * 100) << "%)" << std::endl;
             
-            return response;
+            return createCORSResponse("200 OK", "application/json", jsonResponse);
             
         } catch (const std::exception& e) {
             return createCORSResponse("500 Internal Server Error", "application/json", 
-                "{\"error\":\"Erro interno: " + std::string(e.what()) + "\"}");
+                "{\"error\":\"Internal error: " + std::string(e.what()) + "\"}");
         }
     }
     
     std::string createCORSResponse(const std::string& status, const std::string& contentType, const std::string& body) {
-        std::string response = "HTTP/1.1 " + status + "\\r\\n";
-        response += "Access-Control-Allow-Origin: *\\r\\n";
-        response += "Access-Control-Allow-Methods: GET, POST, OPTIONS\\r\\n";
-        response += "Access-Control-Allow-Headers: Content-Type\\r\\n";
-        response += "Content-Type: " + contentType + "\\r\\n";
-        response += "Content-Length: " + std::to_string(body.length()) + "\\r\\n\\r\\n";
+        std::string response = "HTTP/1.1 " + status + "\r\n";
+        response += "Access-Control-Allow-Origin: *\r\n";
+        response += "Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE\r\n";
+        response += "Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With\r\n";
+        response += "Access-Control-Max-Age: 86400\r\n";
+        response += "Content-Type: " + contentType + "\r\n";
+        response += "Content-Length: " + std::to_string(body.length()) + "\r\n\r\n";
         response += body;
         return response;
     }
     
     std::string extractFormField(const std::string& request, const std::string& fieldName) {
-        std::string pattern = "name=\\\"" + fieldName + "\\\"\\r\\n\\r\\n";
+        std::cout << "Extracting form field: " << fieldName << std::endl;
+        
+        // Look for Content-Disposition: form-data; name="fieldName"
+        std::string pattern = "Content-Disposition: form-data; name=\"" + fieldName + "\"";
         size_t pos = request.find(pattern);
-        if (pos == std::string::npos) return "";
+        if (pos == std::string::npos) {
+            std::cout << "Field not found: " << fieldName << std::endl;
+            // Debug: show what patterns we do find
+            size_t debugPos = request.find("Content-Disposition: form-data");
+            if (debugPos != std::string::npos) {
+                size_t lineEnd = request.find("\r\n", debugPos);
+                if (lineEnd != std::string::npos) {
+                    std::string foundPattern = request.substr(debugPos, lineEnd - debugPos);
+                    std::cout << "Found pattern: " << foundPattern << std::endl;
+                }
+            }
+            return "";
+        }
         
-        pos += pattern.length();
-        size_t endPos = request.find("\\r\\n", pos);
-        if (endPos == std::string::npos) return "";
+        // Find the value after \r\n\r\n
+        pos = request.find("\r\n\r\n", pos);
+        if (pos == std::string::npos) {
+            std::cout << "Field value start not found" << std::endl;
+            return "";
+        }
+        pos += 4;
         
-        return request.substr(pos, endPos - pos);
+        size_t endPos = request.find("\r\n", pos);
+        if (endPos == std::string::npos) {
+            std::cout << "Field value end not found" << std::endl;
+            return "";
+        }
+        
+        std::string value = request.substr(pos, endPos - pos);
+        std::cout << "Field " << fieldName << " = [" << value << "]" << std::endl;
+        
+        return value;
     }
     
     std::vector<uint8_t> extractFileData(const std::string& request, const std::string& boundary) {
-        std::string pattern = "Content-Type: application/octet-stream\\r\\n\\r\\n";
+        std::cout << "Extracting file data with boundary: [" << boundary << "]" << std::endl;
+        
+        // Look for file content after Content-Disposition header with name="file"
+        std::string pattern = "Content-Disposition: form-data; name=\"file\"";
         size_t pos = request.find(pattern);
         if (pos == std::string::npos) {
-            // Try other content types
-            pattern = "Content-Type: "; 
-            pos = request.find(pattern);
-            if (pos != std::string::npos) {
-                pos = request.find("\\r\\n\\r\\n", pos);
-                if (pos != std::string::npos) pos += 4;
-            }
-        } else {
-            pos += pattern.length();
+            std::cout << "File form field not found" << std::endl;
+            return {};
         }
         
-        if (pos == std::string::npos) return {};
+        // Find the actual content after headers (after \r\n\r\n)
+        pos = request.find("\r\n\r\n", pos);
+        if (pos == std::string::npos) {
+            std::cout << "Content start not found" << std::endl;
+            return {};
+        }
+        pos += 4; // Skip \r\n\r\n
         
-        std::string endPattern = "\\r\\n--" + boundary;
+        // Find end of content (boundary with --)
+        std::string endPattern = "\r\n--" + boundary;
         size_t endPos = request.find(endPattern, pos);
-        if (endPos == std::string::npos) return {};
+        if (endPos == std::string::npos) {
+            // Try without \r\n prefix
+            endPattern = "--" + boundary;
+            endPos = request.find(endPattern, pos);
+            if (endPos == std::string::npos) {
+                std::cout << "Content end boundary not found" << std::endl;
+                std::cout << "Looking for: [" << endPattern << "]" << std::endl;
+                // Debug: show end of request
+                if (request.size() > 100) {
+                    std::cout << "End of request: [" << request.substr(request.size() - 100) << "]" << std::endl;
+                }
+                return {};
+            }
+        }
         
         std::string fileContent = request.substr(pos, endPos - pos);
+        std::cout << "Extracted file data: " << fileContent.size() << " bytes" << std::endl;
+        
         return std::vector<uint8_t>(fileContent.begin(), fileContent.end());
     }
 };
@@ -270,7 +428,7 @@ private:
 std::unique_ptr<WebServer> server;
 
 void signalHandler(int sig) {
-    std::cout << "\\n🛑 Parando servidor..." << std::endl;
+    std::cout << "\nStopping server..." << std::endl;
     if (server) {
         server->stop();
     }
@@ -282,16 +440,16 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
     
-    std::cout << "🌐 Iniciando Compressor Web Server..." << std::endl;
+    std::cout << "Starting Compressor Web Server..." << std::endl;
     
     server = std::make_unique<WebServer>();
     
     if (!server->start(8080)) {
-        std::cerr << "❌ Falha ao iniciar servidor" << std::endl;
+        std::cerr << "Failed to start server" << std::endl;
         return 1;
     }
     
-    std::cout << "📋 Algoritmos disponíveis:" << std::endl;
+    std::cout << "Available algorithms:" << std::endl;
     for (const auto& algo : compressor::AlgorithmFactory::list_algorithms()) {
         std::cout << "   • " << algo << std::endl;
     }

@@ -20,7 +20,6 @@ import {
   Speed as SpeedIcon,
   Compress as CompressIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
 
 const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
   const [algorithm, setAlgorithm] = useState('huffman');
@@ -28,14 +27,14 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
   const [error, setError] = useState('');
 
   const algorithms = [
-    { value: 'rle', label: 'RLE (Run Length Encoding)', description: 'Melhor para dados repetitivos' },
-    { value: 'huffman', label: 'Huffman', description: 'Melhor compressão geral' },
-    { value: 'lz77', label: 'LZ77', description: 'Compressão universal' },
+    { value: 'rle', label: 'RLE (Run Length Encoding)', description: 'Best for repetitive data' },
+    { value: 'huffman', label: 'Huffman', description: 'Best general compression' },
+    { value: 'lz77', label: 'LZ77', description: 'Universal compression' },
   ];
 
   const handleCompress = async () => {
     if (!file) {
-      setError('Por favor, faça upload de um arquivo primeiro');
+      setError('Please upload a file first');
       return;
     }
 
@@ -47,28 +46,38 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
       formData.append('file', file);
       formData.append('algorithm', algorithm);
 
-      const response = await axios.post('/api/compress', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        responseType: 'blob',
-        timeout: 300000, // 5 minutes timeout
+      const response = await fetch('/compress', {
+        method: 'POST',
+        body: formData,
       });
 
-      // Simulate compression metrics (normally would come from backend)
-      const compressionResults = {
-        algorithm: algorithm.toUpperCase(),
-        originalSize: file.size,
-        compressedSize: response.data.size,
-        ratio: ((response.data.size / file.size) * 100).toFixed(2),
-        time: Math.floor(Math.random() * 1000) + 100,
-        verified: true,
-        compressedFile: response.data,
-      };
+      const data = await response.json();
 
-      onCompressionComplete(compressionResults);
+      if (data.success) {
+        // Convert base64 back to blob for download
+        const binaryString = atob(data.compressed_data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const compressedBlob = new Blob([bytes], { type: 'application/octet-stream' });
+
+        const compressionResults = {
+          algorithm: data.algorithm.toUpperCase(),
+          originalSize: data.original_size,
+          compressedSize: data.compressed_size,
+          ratio: (data.compression_ratio * 100).toFixed(2),
+          time: data.compression_time_ms,
+          verified: data.verified,
+          compressedFile: compressedBlob,
+        };
+
+        onCompressionComplete(compressionResults);
+      } else {
+        setError('Compression error: ' + (data.error || 'Unknown error'));
+      }
     } catch (err) {
-      setError('Erro durante a compressão: ' + (err.response?.data?.message || err.message));
+      setError('Error during compression: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -98,15 +107,15 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
   return (
     <Paper sx={{ p: 3, height: '100%' }}>
       <Typography variant="h6" gutterBottom>
-        Dashboard de Compressão
+        Compression Dashboard
       </Typography>
 
       <Box sx={{ mb: 3 }}>
         <FormControl fullWidth>
-          <InputLabel>Algoritmo de Compressão</InputLabel>
+          <InputLabel>Compression Algorithm</InputLabel>
           <Select
             value={algorithm}
-            label="Algoritmo de Compressão"
+            label="Compression Algorithm"
             onChange={(e) => setAlgorithm(e.target.value)}
             disabled={loading}
           >
@@ -139,7 +148,7 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
           startIcon={loading ? <CircularProgress size={20} /> : <PlayIcon />}
           size="large"
         >
-          {loading ? 'Comprimindo...' : 'Comprimir Arquivo'}
+          {loading ? 'Compressing...' : 'Compress File'}
         </Button>
       </Box>
 
@@ -147,7 +156,7 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
         <Box>
           <Divider sx={{ mb: 2 }} />
           <Typography variant="subtitle1" gutterBottom>
-            Análise da Compressão
+            Compression Analysis
           </Typography>
 
           <Grid container spacing={2} sx={{ mb: 2 }}>
@@ -166,7 +175,7 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
               <Box sx={{ textAlign: 'center', p: 1 }}>
                 <SpeedIcon color="secondary" />
                 <Typography variant="body2" color="text.secondary">
-                  Comprimido
+                  Compressed
                 </Typography>
                 <Typography variant="h6">
                   {formatFileSize(results.compressedSize)}
@@ -177,17 +186,17 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
 
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
             <Chip
-              label={`Economia: ${(100 - parseFloat(results.ratio)).toFixed(1)}%`}
+              label={`Savings: ${(100 - parseFloat(results.ratio)).toFixed(1)}%`}
               color="success"
               variant="filled"
             />
             <Chip
-              label={`Tempo: ${results.time}ms`}
+              label={`Time: ${results.time}ms`}
               color="info"
               variant="outlined"
             />
             <Chip
-              label={results.verified ? 'Verificado ✓' : 'Erro ✗'}
+              label={results.verified ? 'Verified' : 'Error'}
               color={results.verified ? 'success' : 'error'}
               variant="outlined"
             />
@@ -200,7 +209,7 @@ const CompressionDashboard = ({ file, onCompressionComplete, results }) => {
             startIcon={<DownloadIcon />}
             disabled={!results.compressedFile}
           >
-            Download Arquivo Comprimido
+            Download Compressed File
           </Button>
         </Box>
       )}
